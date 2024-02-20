@@ -18,6 +18,8 @@ class MY_PICRUST2:
         self.num_threads = int(_args.threads) #1
         self.tmp_dir = Path("./my-picrust2-tmp")
 
+        self.force = _args.force
+
 
         self.fasta_file = self.tmp_dir / "dna-sequences.fasta"
         self.biom_file = self.tmp_dir / "feature-table.biom"
@@ -35,11 +37,19 @@ class MY_PICRUST2:
         self.check_exit(self.repseq_path)
         print(f"REPSEQ.qza... OK: {self.repseq_path}")
 
-#        if not self.output_path.exists():
-#            self.output_path.mkdir()
-#            print(f"Creating output directory: {self.output_path}")
-#        else:
-#            print(f"Output directory exists: {self.output_path}")
+        # Outputがあると、Picrust2はエラーを出す。
+        if self.output_path.exists():
+            # --forceオプションがあると、outputを削除する
+            if self.force:
+                print(f"Force option is enabled. Removing the output directory: {self.output_path}")
+                self.call_cmd(f"rm -rf {self.output_path}")
+            # --forceオプションがないと、エラーを出す
+            else:
+                print(f"Output directory is already exits: {self.output_path}")
+                print(f"Please remove the directory or use --force option to overwrite the directory")
+                raise FileExistsError(f"Output directory is already exits: {self.output_path}")
+        else:
+            pass
 
         if not self.tmp_dir.exists():
             self.tmp_dir.mkdir()
@@ -82,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--repseq", type=Path, help="Path to the representative sequences")
     parser.add_argument("-o", "--output", type=Path, help="Path to the output directory", default="./my-picrust2-output")
     parser.add_argument("-p", "--threads", type=int, help="Number of threads to use", default=1)
+    parser.add_argument("-f", "--force", action="store_true", help="Override output directory", default=False)
 
     args = parser.parse_args()
     my_pi = MY_PICRUST2(args)
